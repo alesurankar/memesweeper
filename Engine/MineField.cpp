@@ -50,6 +50,24 @@ bool MineField::Tile::IsRevealed() const
 	return state == State::Revealed;
 }
 
+void MineField::Tile::ToggleFlag()
+{
+	assert(!IsRevealed());
+	if (state == State::Hidden)
+	{
+		state = State::Flagged;
+	}
+	else
+	{
+		state = State::Hidden;
+	}
+}
+
+bool MineField::Tile::IsFlagged() const
+{
+	return state == State::Flagged;
+}
+
 MineField::MineField(int nMines)
 {
 	assert(nMines > 0 && nMines < width * height);
@@ -104,6 +122,17 @@ void MineField::OnRevealClick(const Vei2& screenPos)
 	if (!tile.IsRevealed())
 	{
 		tile.Reveal();
+	}
+}
+
+void MineField::OnFlagClick(const Vei2 screenPos)
+{
+	const Vei2 gridPos = ScreenToGrid(screenPos);
+	assert(gridPos.x >= 0 && gridPos.x < width && gridPos.y >= 0 && gridPos.y < height);
+	Tile& tile = TileAt(gridPos);
+	if (!tile.IsRevealed())
+	{
+		tile.ToggleFlag();
 	}
 }
 
