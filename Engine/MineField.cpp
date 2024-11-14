@@ -3,6 +3,7 @@
 #include <random>
 #include "Vei2.h"
 #include "SpriteCodex.h"
+#include <algorithm>
 
 void MineField::Tile::SpawnMine()
 {
@@ -15,27 +16,68 @@ bool MineField::Tile::HasMine() const
 	return hasMine;
 }
 
-void MineField::Tile::Draw(const Vei2& screenPos, Graphics& gfx) const
+void MineField::Tile::Draw(const Vei2& screenPos, bool gameOver, Graphics& gfx) const
 {
-	switch(state)
+	if (!gameOver)
 	{
-	case State::Hidden:
-		SpriteCodex::DrawTileButton(screenPos, gfx);
-		break;
-	case State::Flagged:
-		SpriteCodex::DrawTileButton(screenPos, gfx);
-		SpriteCodex::DrawTileFlag(screenPos, gfx);
-		break;
-	case State::Revealed:
-		if (!HasMine())
+		switch (state)
 		{
-			SpriteCodex::DrawTile0(screenPos, gfx);
+		case State::Hidden:
+			SpriteCodex::DrawTileButton(screenPos, gfx);
+			break;
+		case State::Flagged:
+			SpriteCodex::DrawTileButton(screenPos, gfx);
+			SpriteCodex::DrawTileFlag(screenPos, gfx);
+			break;
+		case State::Revealed:
+			if (!HasMine())
+			{
+				SpriteCodex::DrawTileNumber(screenPos, nNeighborMines, gfx);
+			}
+			else
+			{
+				SpriteCodex::DrawTileBomb(screenPos, gfx);
+			}
+			break;
 		}
-		else
+	}
+	else // gameOver
+	{
+		switch (state)
 		{
-			SpriteCodex::DrawTileBomb(screenPos, gfx);
+		case State::Hidden:
+			if (HasMine())
+			{
+				SpriteCodex::DrawTileBomb(screenPos, gfx);
+			}
+			else
+			{
+				SpriteCodex::DrawTileButton(screenPos, gfx);
+			}
+			break;
+		case State::Flagged:
+			if (!HasMine())
+			{
+				SpriteCodex::DrawTileBomb(screenPos, gfx);
+				SpriteCodex::DrawTileFlag(screenPos, gfx);
+			}
+			else
+			{
+				SpriteCodex::DrawTileBomb(screenPos, gfx);
+				SpriteCodex::DrawTileCross(screenPos, gfx);
+			}
+			break;
+		case State::Revealed:
+			if (!HasMine())
+			{
+				SpriteCodex::DrawTileNumber(screenPos, nNeighborMines, gfx);
+			}
+			else
+			{
+				SpriteCodex::DrawTileBombRed(screenPos, gfx);
+			}
+			break;
 		}
-		break;
 	}
 }
 
@@ -68,6 +110,12 @@ bool MineField::Tile::IsFlagged() const
 	return state == State::Flagged;
 }
 
+void MineField::Tile::SetNeighborMineCount(int mineCount)
+{
+	assert(nNeighborMines == -1);
+	nNeighborMines = mineCount;
+}
+
 MineField::MineField(int nMines)
 {
 	assert(nMines > 0 && nMines < width * height);
@@ -86,13 +134,12 @@ MineField::MineField(int nMines)
 		while( TileAt(spawnPos).HasMine() );
 		TileAt(spawnPos).SpawnMine();
 	}
-	//reveal test
-	for (int i = 0; i < 120; i++)
+
+	for (Vei2 gridPos = { 0,0 }; gridPos.y < height; gridPos.y++)
 	{
-		const Vei2 gridPos = { xDist(rng), yDist(rng) };
-		if (!TileAt(gridPos).IsRevealed())
+		for (gridPos.x = 0; gridPos.x < width; gridPos.x++)
 		{
-			TileAt(gridPos).Reveal();
+			TileAt(gridPos).SetNeighborMineCount(CountNeighborMines(gridPos));
 		}
 	}
 }
@@ -104,7 +151,7 @@ void MineField::Draw(Graphics& gfx) const
 	{
 		for (gridPos.x = 0; gridPos.x < width; gridPos.x++)
 		{
-			TileAt(gridPos).Draw(gridPos * SpriteCodex::tileSize,gfx);
+			TileAt(gridPos).Draw(gridPos * SpriteCodex::tileSize,gameOver,gfx);
 		}
 	}
 }
@@ -116,23 +163,33 @@ RectI MineField::GetRect() const
 
 void MineField::OnRevealClick(const Vei2& screenPos)
 {
-	const Vei2 gridPos = ScreenToGrid(screenPos);
-	assert(gridPos.x >= 0 && gridPos.x < width && gridPos.y >= 0 && gridPos.y < height);
-	Tile& tile = TileAt(gridPos);
-	if (!tile.IsRevealed() && !tile.IsFlagged())
+	if (!gameOver)
 	{
-		tile.Reveal();
+		const Vei2 gridPos = ScreenToGrid(screenPos);
+		assert(gridPos.x >= 0 && gridPos.x < width && gridPos.y >= 0 && gridPos.y < height);
+		Tile& tile = TileAt(gridPos);
+		if (!tile.IsRevealed() && !tile.IsFlagged())
+		{
+			tile.Reveal();
+			if (tile.HasMine())
+			{
+				gameOver = true;
+			}
+		}
 	}
 }
 
 void MineField::OnFlagClick(const Vei2 screenPos)
 {
-	const Vei2 gridPos = ScreenToGrid(screenPos);
-	assert(gridPos.x >= 0 && gridPos.x < width && gridPos.y >= 0 && gridPos.y < height);
-	Tile& tile = TileAt(gridPos);
-	if (!tile.IsRevealed())
+	if (!gameOver)
 	{
-		tile.ToggleFlag();
+		const Vei2 gridPos = ScreenToGrid(screenPos);
+		assert(gridPos.x >= 0 && gridPos.x < width && gridPos.y >= 0 && gridPos.y < height);
+		Tile& tile = TileAt(gridPos);
+		if (!tile.IsRevealed())
+		{
+			tile.ToggleFlag();
+		}
 	}
 }
 
@@ -149,4 +206,25 @@ const MineField::Tile& MineField::TileAt(const Vei2& gridPos) const
 Vei2 MineField::ScreenToGrid(const Vei2& screenPos)
 {
 	return screenPos / SpriteCodex::tileSize;
+}
+
+int MineField::CountNeighborMines(const Vei2& gridPos)
+{
+	const int xStart = std::max(0, gridPos.x - 1);
+	const int yStart = std::max(0, gridPos.y - 1);
+	const int xEnd = std::min(width - 1, gridPos.x + 1);
+	const int yEnd = std::min(height - 1, gridPos.y + 1);
+
+	int count = 0;
+	for (Vei2 gridPos = { xStart,yStart }; gridPos.y <= yEnd; gridPos.y++)
+	{
+		for (gridPos.x = xStart; gridPos.x <= xEnd; gridPos.x++)
+		{
+			if (TileAt(gridPos).HasMine())
+			{
+				count++;
+			}
+		}
+	}
+	return count;
 }
