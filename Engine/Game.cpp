@@ -23,6 +23,7 @@ void Game::UpdateModel()
 	if (wnd.kbd.KeyIsPressed(VK_RETURN))
 	{
 		field.SetGameNotOver();
+		field = MineField(gfx.GetRect().GetCenter(), 2);
 	}
 	while (!wnd.mouse.IsEmpty())
 	{
