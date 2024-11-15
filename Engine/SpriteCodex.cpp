@@ -1509,3 +1509,13 @@ void SpriteCodex::DrawTileNumber(const Vei2& pos, int n, Graphics& gfx)
 		break;
 	}
 }
+
+void SpriteCodex::DrawWin(Graphics& gfx)
+{
+	gfx.DrawRect(0, 0, Graphics::ScreenWidth, Graphics::ScreenHeight, Colors::Green);
+}
+
+void SpriteCodex::DrawLoose(Graphics& gfx)
+{
+	gfx.DrawRect(0, 0, Graphics::ScreenWidth, Graphics::ScreenHeight, Colors::Red);
+}

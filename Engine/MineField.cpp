@@ -231,3 +231,26 @@ int MineField::CountNeighborMines(const Vei2& gridPos)
 	}
 	return count;
 }
+
+bool MineField::GameIsWon() const
+{
+	for (const Tile& t : field)
+	{
+		if ((t.HasMine() && !t.IsFlagged()) || 
+			(!t.HasMine() && !t.IsRevealed()))
+		{
+			return false;
+		}
+	}
+	return true;
+}
+
+void MineField::SetGameNotOver()
+{
+	gameOver = false;
+}
+
+bool MineField::GameIsLost() const
+{
+	return gameOver;
+}

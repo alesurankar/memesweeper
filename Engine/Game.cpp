@@ -1,11 +1,12 @@
 #include "MainWindow.h"
 #include "Game.h"
+#include "SpriteCodex.h"
 
 Game::Game( MainWindow& wnd )
 	:
 	wnd( wnd ),
 	gfx( wnd ),
-	field(gfx.GetRect().GetCenter(),20)
+	field(gfx.GetRect().GetCenter(),2)
 {
 }
 
@@ -19,6 +20,10 @@ void Game::Go()
 
 void Game::UpdateModel()
 {
+	if (wnd.kbd.KeyIsPressed(VK_RETURN))
+	{
+		field.SetGameNotOver();
+	}
 	while (!wnd.mouse.IsEmpty())
 	{
 		const auto e = wnd.mouse.Read();
@@ -43,5 +48,13 @@ void Game::UpdateModel()
 
 void Game::ComposeFrame()
 {
+	if (field.GameIsWon())
+	{
+		SpriteCodex::DrawWin(gfx);
+	}
+	if (field.GameIsLost())
+	{
+		SpriteCodex::DrawLoose(gfx);
+	}
 	field.Draw(gfx);
 }

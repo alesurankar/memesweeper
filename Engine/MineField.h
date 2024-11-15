@@ -34,14 +34,17 @@ public:
 	RectI GetRect() const;
 	void OnRevealClick( const Vei2& screenPos );
 	void OnFlagClick(const Vei2 screenPos);
+	bool GameIsWon() const;
+	void SetGameNotOver();
+	bool GameIsLost() const;
 private:
 	Tile& TileAt(const Vei2& gridPos);
 	const Tile& TileAt(const Vei2& gridPos) const;
 	Vei2 ScreenToGrid(const Vei2& screenPos);
 	int CountNeighborMines(const Vei2& gridPos);
 private:
-	static constexpr int width = 20;
-	static constexpr int height = 16;
+	static constexpr int width = 5;
+	static constexpr int height = 4;
 	static constexpr int borderThickness = 10;
 	static constexpr Color borderColor = Colors::Blue;
 	Vei2 topLeft;
